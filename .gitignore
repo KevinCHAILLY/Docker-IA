@@ -1,0 +1,26 @@
+# Fichiers d'environnement
+.env
+
+# Dossiers Docker
+data/
+
+# Logs
+*.log
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Fichiers temporaires
+*.tmp
+*.temp
+
+# Dossiers de dépendances
+node_modules/
+vendor/
+
+# Fichiers de configuration IDE
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project 

@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_MODELS=${OLLAMA_MODELS:-/root/.ollama/models}
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-5m}
+      - OLLAMA_ORIGINS=${OLLAMA_ORIGINS:-}
+      - OLLAMA_DEBUG=${OLLAMA_DEBUG:-false}
+      - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL:-0}
+      - OLLAMA_MAX_QUEUE=${OLLAMA_MAX_QUEUE:-512}
+      - OLLAMA_LOAD_TIMEOUT=${OLLAMA_LOAD_TIMEOUT:-5m}
+
+volumes:
+  ollama_data:
+    name: ollama_data 
