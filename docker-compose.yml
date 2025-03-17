@@ -1,6 +1,24 @@
 version: '3.8'
 
 services:
+  traefik:
+    image: traefik:v3.3
+    container_name: traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=webui_external"
+      - "--entrypoints.web.address=:80"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - webui_external
+    restart: unless-stopped
+
   ollama:
     image: ollama/ollama:latest
     container_name: ollama
@@ -20,6 +38,7 @@ services:
       - OLLAMA_LOAD_TIMEOUT=${OLLAMA_LOAD_TIMEOUT:-5m}
     networks:
       - ollama_internal
+      - ollama_external
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
@@ -28,13 +47,20 @@ services:
       - open-webui_data:/app/backend/data
     depends_on:
       - ollama
-    ports:
-      - "3000:8080"
+    expose:
+      - "8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=webui_external"
+      - "traefik.http.routers.open-webui.rule=Host(`open-webui.docker.localhost`)"
+      - "traefik.http.routers.open-webui.entrypoints=web"
+      - "traefik.http.services.open-webui.loadbalancer.server.port=8080"
+      - "traefik.http.services.open-webui.loadbalancer.passhostheader=true"
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
       - WEBUI_AUTH=${WEBUI_AUTH:-true}
       - WEBUI_NAME=${WEBUI_NAME:-Ollama WebUI}
-      - WEBUI_URL=${WEBUI_URL:-http://localhost:3000}
+      - WEBUI_URL=${WEBUI_URL:-http://open-webui.docker.localhost}
       - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-changeme}
     restart: unless-stopped
     networks:
@@ -43,7 +69,9 @@ services:
 
 networks:
   ollama_internal:
+    driver: bridge
     internal: true
+  ollama_external:
     driver: bridge
   webui_external:
     driver: bridge

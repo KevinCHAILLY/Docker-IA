@@ -2,172 +2,141 @@
 
 # Couleurs pour les messages
 GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
 RED='\033[0;31m'
-BLUE='\033[0;34m'
-YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
-# Fonction pour afficher les messages
-print_message() {
-    echo -e "${BLUE}[Ollama]${NC} $1"
+# Fonction pour afficher un message d'aide
+show_help() {
+    echo -e "${YELLOW}Usage:${NC} $0 [command]"
+    echo ""
+    echo "Commands:"
+    echo "  start       - Démarre les services Ollama et Open WebUI"
+    echo "  stop        - Arrête les services"
+    echo "  restart     - Redémarre les services"
+    echo "  pull MODEL  - Télécharge un modèle (ex: mistral, llama2)"
+    echo "  run MODEL   - Exécute une commande avec un modèle"
+    echo "  help        - Affiche ce message d'aide"
+    echo ""
 }
 
-print_webui_message() {
-    echo -e "${YELLOW}[WebUI]${NC} $1"
-}
-
-print_success() {
-    echo -e "${GREEN}[Succès]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[Erreur]${NC} $1"
-}
-
-# Vérifier que Docker est installé
+# Vérifier si Docker est installé
 check_docker() {
     if ! command -v docker &> /dev/null; then
-        print_error "Docker n'est pas installé. Veuillez l'installer avant de continuer."
+        echo -e "${RED}Docker n'est pas installé. Veuillez l'installer avant de continuer.${NC}"
         exit 1
     fi
 }
 
-# Démarrer les services
-start() {
-    print_message "Démarrage des services..."
-    docker compose up -d
-    if [ $? -eq 0 ]; then
-        print_success "Les services ont été démarrés avec succès"
-        print_message "API Ollama accessible uniquement à l'intérieur du réseau Docker"
-        print_webui_message "Interface Web disponible à l'adresse: http://localhost:3000"
-    else
-        print_error "Erreur lors du démarrage des services"
+# Vérifier si Docker Compose est installé
+check_docker_compose() {
+    if ! docker compose version &> /dev/null; then
+        echo -e "${RED}Docker Compose n'est pas installé ou n'est pas dans le PATH.${NC}"
         exit 1
     fi
 }
 
-# Arrêter les services
-stop() {
-    print_message "Arrêt des services..."
-    docker compose down
-    if [ $? -eq 0 ]; then
-        print_success "Les services ont été arrêtés avec succès"
-    else
-        print_error "Erreur lors de l'arrêt des services"
-        exit 1
-    fi
-}
-
-# Redémarrer les services
-restart() {
-    stop
-    start
-}
-
-# Télécharger un modèle
-pull() {
-    if [ -z "$1" ]; then
-        print_error "Veuillez spécifier un modèle à télécharger"
-        echo "Usage: $0 pull <nom_du_modele>"
-        exit 1
-    fi
-    print_message "Téléchargement du modèle $1..."
-    docker compose exec ollama ollama pull "$1"
-    if [ $? -eq 0 ]; then
-        print_success "Le modèle $1 a été téléchargé avec succès"
-    else
-        print_error "Erreur lors du téléchargement du modèle $1"
-        exit 1
-    fi
-}
-
-# Exécuter une commande avec un modèle
-run() {
-    if [ -z "$1" ]; then
-        print_error "Veuillez spécifier un modèle à exécuter"
-        echo "Usage: $0 run <nom_du_modele>"
-        exit 1
-    fi
-    print_message "Exécution du modèle $1..."
-    docker compose exec ollama ollama run "$1"
-}
-
-# Afficher les logs
-logs() {
-    if [ -z "$1" ]; then
-        print_message "Affichage des logs de tous les services..."
-        docker compose logs --tail=100 -f
-    else
-        if [ "$1" = "ollama" ] || [ "$1" = "open-webui" ]; then
-            print_message "Affichage des logs du service $1..."
-            docker compose logs --tail=100 -f "$1"
+# Créer le fichier .env s'il n'existe pas
+create_env_file() {
+    if [ ! -f .env ]; then
+        if [ -f .env.example ]; then
+            cp .env.example .env
+            echo -e "${GREEN}Fichier .env créé à partir de .env.example${NC}"
         else
-            print_error "Service inconnu: $1"
-            echo "Services disponibles: ollama, open-webui"
+            echo -e "${RED}Fichier .env.example introuvable. Impossible de créer le fichier .env.${NC}"
             exit 1
         fi
     fi
 }
 
-# Afficher les modèles disponibles
-models() {
-    print_message "Liste des modèles disponibles..."
-    docker compose exec ollama ollama list
+# Démarrer les services
+start_services() {
+    echo -e "${YELLOW}Démarrage des services Ollama et Open WebUI...${NC}"
+    docker compose up -d
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}Services démarrés avec succès!${NC}"
+        echo -e "${GREEN}Interface Open WebUI accessible à l'adresse: http://open-webui.docker.localhost${NC}"
+        echo -e "${GREEN}Tableau de bord Traefik accessible à l'adresse: http://localhost:8080${NC}"
+        echo -e "${GREEN}API Ollama accessible uniquement à l'intérieur du réseau Docker${NC}"
+        echo -e "${GREEN}Ollama peut accéder à Internet pour télécharger et mettre à jour les modèles${NC}"
+    else
+        echo -e "${RED}Erreur lors du démarrage des services.${NC}"
+        exit 1
+    fi
 }
 
-# Afficher l'aide
-show_help() {
-    echo "Usage: $0 <commande> [arguments]"
-    echo ""
-    echo "Commandes disponibles:"
-    echo "  start         Démarrer tous les services"
-    echo "  stop          Arrêter tous les services"
-    echo "  restart       Redémarrer tous les services"
-    echo "  pull <model>  Télécharger un modèle"
-    echo "  run <model>   Exécuter une commande avec un modèle"
-    echo "  logs [service] Afficher les logs (ollama, open-webui ou tous si non spécifié)"
-    echo "  models        Afficher la liste des modèles disponibles"
-    echo "  help          Afficher cette aide"
-    echo ""
-    echo "Exemples:"
-    echo "  $0 start"
-    echo "  $0 pull mistral"
-    echo "  $0 run mistral"
-    echo "  $0 logs ollama"
+# Arrêter les services
+stop_services() {
+    echo -e "${YELLOW}Arrêt des services...${NC}"
+    docker compose down
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}Services arrêtés avec succès.${NC}"
+    else
+        echo -e "${RED}Erreur lors de l'arrêt des services.${NC}"
+        exit 1
+    fi
 }
 
-# Vérifier que Docker est installé
+# Télécharger un modèle
+pull_model() {
+    if [ -z "$1" ]; then
+        echo -e "${RED}Veuillez spécifier un modèle à télécharger.${NC}"
+        echo -e "Exemple: $0 pull mistral"
+        exit 1
+    fi
+    
+    echo -e "${YELLOW}Téléchargement du modèle $1...${NC}"
+    docker compose exec ollama ollama pull $1
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}Modèle $1 téléchargé avec succès.${NC}"
+    else
+        echo -e "${RED}Erreur lors du téléchargement du modèle $1.${NC}"
+        exit 1
+    fi
+}
+
+# Exécuter une commande avec un modèle
+run_model() {
+    if [ -z "$1" ]; then
+        echo -e "${RED}Veuillez spécifier un modèle à exécuter.${NC}"
+        echo -e "Exemple: $0 run mistral"
+        exit 1
+    fi
+    
+    echo -e "${YELLOW}Exécution du modèle $1...${NC}"
+    docker compose exec ollama ollama run $1
+}
+
+# Vérifier les prérequis
 check_docker
+check_docker_compose
+create_env_file
 
 # Traiter les commandes
 case "$1" in
     start)
-        start
+        start_services
         ;;
     stop)
-        stop
+        stop_services
         ;;
     restart)
-        restart
+        stop_services
+        start_services
         ;;
     pull)
-        pull "$2"
+        pull_model "$2"
         ;;
     run)
-        run "$2"
-        ;;
-    logs)
-        logs "$2"
-        ;;
-    models)
-        models
+        run_model "$2"
         ;;
     help|--help|-h)
         show_help
         ;;
     *)
-        print_error "Commande inconnue: $1"
         show_help
         exit 1
         ;;
-esac 
+esac
+
+exit 0 
