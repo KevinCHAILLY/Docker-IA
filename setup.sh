@@ -25,16 +25,12 @@ check_docker() {
         print_error "Docker n'est pas installé. Veuillez l'installer avant de continuer."
         exit 1
     fi
-    if ! command -v docker-compose &> /dev/null; then
-        print_error "Docker Compose n'est pas installé. Veuillez l'installer avant de continuer."
-        exit 1
-    fi
 }
 
 # Démarrer Ollama
 start() {
     print_message "Démarrage d'Ollama..."
-    docker-compose up -d
+    docker compose up -d
     if [ $? -eq 0 ]; then
         print_success "Ollama a été démarré avec succès"
     else
@@ -46,7 +42,7 @@ start() {
 # Arrêter Ollama
 stop() {
     print_message "Arrêt d'Ollama..."
-    docker-compose down
+    docker compose down
     if [ $? -eq 0 ]; then
         print_success "Ollama a été arrêté avec succès"
     else
@@ -69,7 +65,7 @@ pull() {
         exit 1
     fi
     print_message "Téléchargement du modèle $1..."
-    docker-compose exec ollama ollama pull "$1"
+    docker compose exec ollama ollama pull "$1"
     if [ $? -eq 0 ]; then
         print_success "Le modèle $1 a été téléchargé avec succès"
     else
@@ -86,7 +82,7 @@ run() {
         exit 1
     fi
     print_message "Exécution du modèle $1..."
-    docker-compose exec ollama ollama run "$1"
+    docker compose exec ollama ollama run "$1"
 }
 
 # Afficher l'aide

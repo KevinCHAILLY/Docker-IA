@@ -75,19 +75,19 @@ Si vous préférez utiliser les commandes Docker Compose directement :
 ### Démarrer les services
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Vérifier l'état des services
 
 ```bash
-docker-compose ps
+docker compose ps
 ```
 
 ### Arrêter les services
 
 ```bash
-docker-compose down
+docker compose down
 ```
 
 ### Accéder à Ollama
@@ -97,13 +97,13 @@ Ollama est accessible à l'adresse `http://localhost:11434`. Vous pouvez interag
 ### Exécuter une commande dans le conteneur
 
 ```bash
-docker-compose exec ollama ollama run mistral
+docker compose exec ollama ollama run mistral
 ```
 
 ### Télécharger un modèle
 
 ```bash
-docker-compose exec ollama ollama pull mistral
+docker compose exec ollama ollama pull mistral
 ```
 
 ## Structure des fichiers
