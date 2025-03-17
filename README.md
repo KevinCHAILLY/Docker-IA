@@ -1,10 +1,20 @@
 # Ollama avec Docker Compose
 
-Ce dépôt contient la configuration nécessaire pour exécuter [Ollama](https://ollama.ai/) dans un conteneur Docker à l'aide de Docker Compose.
+Ce dépôt contient la configuration nécessaire pour exécuter [Ollama](https://ollama.ai/) dans un conteneur Docker à l'aide de Docker Compose, avec une interface utilisateur [Open WebUI](https://github.com/open-webui/open-webui).
 
 ## Qu'est-ce qu'Ollama ?
 
 Ollama est un outil qui permet de lancer des modèles de langage de grande taille (LLM) localement. Il prend en charge une variété de modèles comme Llama 2, Mistral, Vicuna et bien d'autres.
+
+## Qu'est-ce qu'Open WebUI ?
+
+Open WebUI est une interface utilisateur web moderne et conviviale pour Ollama. Elle offre de nombreuses fonctionnalités avancées :
+- Interface de chat similaire à ChatGPT
+- Gestion des modèles
+- Historique des conversations
+- Partage de conversations
+- Personnalisation des prompts
+- Et bien plus encore...
 
 ## Prérequis
 
@@ -40,7 +50,31 @@ Toutes les variables d'environnement sont stockées dans le fichier `.env`. Un f
 | `OLLAMA_NUM_PARALLEL` | Nombre maximum de requêtes parallèles | `0` (illimité) |
 | `OLLAMA_MAX_QUEUE` | Nombre maximum de requêtes en file d'attente | `512` |
 
+### Variables d'environnement Open WebUI
+
+| Variable | Description | Valeur par défaut |
+|----------|-------------|-------------------|
+| `WEBUI_AUTH` | Activer l'authentification | `true` |
+| `WEBUI_NAME` | Nom de l'interface Web | `Ollama WebUI` |
+| `WEBUI_URL` | URL de l'interface Web | `http://localhost:3000` |
+| `WEBUI_SECRET_KEY` | Clé secrète pour l'authentification | `changeme` |
+
 Pour la liste complète des variables d'environnement disponibles, consultez le fichier `.env.example`.
+
+## Architecture réseau
+
+La configuration utilise deux réseaux Docker distincts pour une sécurité renforcée :
+
+1. **Réseau interne (`ollama_internal`)** :
+   - Réseau isolé sans accès à l'extérieur
+   - Contient le service Ollama
+   - Accessible uniquement par les conteneurs connectés à ce réseau
+
+2. **Réseau externe (`webui_external`)** :
+   - Réseau exposé à l'hôte
+   - Permet l'accès à l'interface Open WebUI depuis l'extérieur
+
+Le service Open WebUI est connecté aux deux réseaux, agissant comme un pont sécurisé entre l'utilisateur et le service Ollama. Cette architecture garantit que l'API Ollama n'est jamais directement exposée à l'extérieur.
 
 ## Utilisation
 
@@ -90,9 +124,18 @@ docker compose ps
 docker compose down
 ```
 
-### Accéder à Ollama
+### Accéder à Ollama et Open WebUI
 
-Ollama est accessible à l'adresse `http://localhost:11434`. Vous pouvez interagir avec Ollama via son API.
+- **API Ollama** : accessible uniquement à l'intérieur du réseau Docker interne
+- **Interface Open WebUI** : accessible à l'adresse `http://localhost:3000`
+
+Lors de votre première connexion à Open WebUI, vous devrez créer un compte utilisateur.
+
+### Sécurité
+
+Pour des raisons de sécurité, l'API Ollama est isolée dans un réseau Docker interne sans accès direct depuis l'extérieur. Toutes les interactions avec Ollama doivent passer par l'interface Open WebUI ou par les commandes Docker.
+
+Cette architecture à deux réseaux offre une couche de sécurité supplémentaire en empêchant tout accès non autorisé à l'API Ollama.
 
 ### Exécuter une commande dans le conteneur
 
@@ -120,13 +163,15 @@ docker compose exec ollama ollama pull mistral
 
 ## Volumes
 
-- `ollama_data`: Stocke les modèles et les données d'Ollama.
+- `ollama_data`: Stocke les modèles et les données d'Ollama
+- `open-webui_data`: Stocke les données de l'interface Open WebUI (utilisateurs, conversations, etc.)
 
 ## Ressources additionnelles
 
 - [Site officiel d'Ollama](https://ollama.ai/)
 - [Documentation d'Ollama](https://github.com/ollama/ollama/tree/main/docs)
 - [Image Docker Ollama](https://hub.docker.com/r/ollama/ollama)
+- [GitHub Open WebUI](https://github.com/open-webui/open-webui)
 
 ## Licence
 
